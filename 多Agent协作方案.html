@@ -1,0 +1,631 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="data:," />
+    <title>多Agent协作方案</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600;700;900&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --paper: #f6f1e7;
+        --paper-2: #efe7d7;
+        --card: #fffdf8;
+        --ink: #211d16;
+        --ink-2: #57503f;
+        --ink-3: #8a8069;
+        --line: #ddd2ba;
+        --seal: #b3352b;
+        --seal-soft: #f3ddd6;
+        --gold: #9a7420;
+        --gold-soft: #efe3c2;
+        --jade: #2e6e5e;
+        --jade-soft: #d9e8e0;
+        --warn-bg: #fdf3e0;
+        --warn-line: #e3c98a;
+        --shadow: 0 1px 2px rgba(60, 45, 20, .06), 0 8px 24px rgba(60, 45, 20, .07);
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --paper: #171512;
+          --paper-2: #1e1b16;
+          --card: #221f1a;
+          --ink: #ece5d3;
+          --ink-2: #b8b09c;
+          --ink-3: #857d68;
+          --line: #3a352a;
+          --seal: #e0655a;
+          --seal-soft: #3d2622;
+          --gold: #d3a94e;
+          --gold-soft: #38301d;
+          --jade: #6fbfa6;
+          --jade-soft: #23332d;
+          --warn-bg: #2e2818;
+          --warn-line: #5c4d24;
+          --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+        }
+      }
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--ink);
+        font-family: "Noto Sans SC", system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+        font-size: 16px;
+        line-height: 1.75;
+        -webkit-font-smoothing: antialiased;
+      }
+      .wrap { max-width: 1060px; margin: 0 auto; padding: 0 20px 72px; }
+      a { color: var(--seal); text-decoration: none; border-bottom: 1px solid color-mix(in srgb, var(--seal) 40%, transparent); overflow-wrap: anywhere; }
+      a:hover { border-bottom-color: var(--seal); }
+      code, .mono { font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .88em; }
+      h1, h2, h3 { font-family: "Noto Serif SC", "Songti SC", serif; line-height: 1.35; }
+
+      /* ---------- Hero ---------- */
+      .hero { padding: 44px 0 8px; }
+      .hero-top { display: flex; align-items: flex-start; gap: 20px; }
+      .hero h1 { font-size: clamp(30px, 6vw, 46px); font-weight: 900; margin: 0 0 6px; letter-spacing: .01em; }
+      .hero .sub { font-size: clamp(16px, 3vw, 20px); color: var(--ink-2); margin: 0; max-width: 640px; }
+      .seal-stamp {
+        flex: none; width: 74px; height: 74px; border-radius: 10px;
+        background: var(--seal); color: #fdf6ec;
+        display: flex; align-items: center; justify-content: center;
+        font-family: "Noto Serif SC", serif; font-weight: 900; font-size: 17px; line-height: 1.25; text-align: center;
+        transform: rotate(3deg); box-shadow: var(--shadow); letter-spacing: .12em;
+        padding: 6px;
+      }
+      @media (max-width: 560px) { .seal-stamp { width: 58px; height: 58px; font-size: 14px; } }
+      .meta-line { margin-top: 14px; font-size: 13px; color: var(--ink-3); display: flex; flex-wrap: wrap; gap: 6px 18px; }
+      .verdict {
+        margin-top: 26px; background: var(--card); border: 1px solid var(--line); border-top: 4px solid var(--seal);
+        border-radius: 6px; padding: 20px 22px; box-shadow: var(--shadow);
+      }
+      .verdict p { margin: 0 0 10px; }
+      .verdict p:last-child { margin-bottom: 0; }
+      .verdict strong { color: var(--seal); }
+
+      /* ---------- Nav ---------- */
+      nav.toc {
+        position: sticky; top: 0; z-index: 20; margin: 28px -20px 0; padding: 10px 20px;
+        background: color-mix(in srgb, var(--paper) 92%, transparent); backdrop-filter: blur(8px);
+        border-bottom: 1px solid var(--line);
+        display: flex; gap: 8px; flex-wrap: wrap;
+      }
+      nav.toc::-webkit-scrollbar { display: none; }
+      nav.toc a {
+        flex: none; border: 1px solid var(--line); border-radius: 999px; padding: 4px 14px;
+        font-size: 14px; color: var(--ink-2); background: var(--card);
+      }
+      nav.toc a:hover { color: var(--seal); border-color: var(--seal); }
+
+      section { margin-top: 52px; }
+      .sec-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 6px; }
+      .sec-head .no {
+        font-family: "Noto Serif SC", serif; font-weight: 900; color: var(--seal);
+        font-size: 15px; border: 1.5px solid var(--seal); border-radius: 6px; padding: 1px 8px; flex: none;
+      }
+      .sec-head h2 { font-size: clamp(22px, 4vw, 28px); font-weight: 700; margin: 0; }
+      .sec-lede { color: var(--ink-2); margin: 4px 0 20px; max-width: 760px; }
+
+      /* ---------- Flow ---------- */
+      .flow { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; margin: 18px 0 6px; }
+      .flow .step {
+        background: var(--card); border: 1px solid var(--line); border-radius: 8px;
+        padding: 10px 14px; min-width: 0; flex: 1 1 auto; text-align: center;
+      }
+      .flow .step b { display: block; font-family: "Noto Serif SC", serif; font-size: 16px; }
+      .flow .step span { font-size: 12.5px; color: var(--ink-3); }
+      .flow .step.hot { border-color: var(--seal); background: var(--seal-soft); }
+      .flow .step.hot b { color: var(--seal); }
+      .flow .arrow { align-self: center; color: var(--ink-3); font-size: 15px; flex: none; }
+      @media (max-width: 640px) {
+        .flow { flex-direction: column; }
+        .flow .arrow { transform: rotate(90deg); align-self: center; }
+      }
+      .flow-note { font-size: 13.5px; color: var(--ink-3); margin: 8px 0 0; }
+
+      /* ---------- Role explorer ---------- */
+      .roles { display: grid; grid-template-columns: 300px 1fr; gap: 18px; margin-top: 20px; }
+      @media (max-width: 760px) { .roles { grid-template-columns: 1fr; } }
+      .role-list { display: flex; flex-direction: column; gap: 6px; }
+      @media (max-width: 760px) { .role-list { flex-direction: row; flex-wrap: wrap; } }
+      .role-btn {
+        text-align: left; font: inherit; cursor: pointer; background: var(--card); color: var(--ink);
+        border: 1px solid var(--line); border-radius: 8px; padding: 9px 13px;
+        display: flex; align-items: baseline; gap: 10px; width: 100%;
+      }
+      @media (max-width: 760px) { .role-btn { width: auto; flex: 1 1 44%; } }
+      .role-btn .rn { font-family: "Noto Serif SC", serif; font-weight: 700; font-size: 15.5px; white-space: nowrap; }
+      .role-btn .rl { font-size: 12px; color: var(--ink-3); white-space: nowrap; }
+      .role-btn[aria-pressed="true"] { border-color: var(--seal); background: var(--seal-soft); }
+      .role-btn[aria-pressed="true"] .rn { color: var(--seal); }
+      .role-detail {
+        background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+        padding: 22px 24px; box-shadow: var(--shadow); min-height: 210px;
+      }
+      .role-detail h3 { margin: 0 0 2px; font-size: 21px; }
+      .role-detail .rid { color: var(--ink-3); font-size: 13px; margin-bottom: 12px; }
+      .role-detail p { margin: 0 0 10px; }
+      .role-detail .map { background: var(--paper-2); border-radius: 6px; padding: 10px 14px; font-size: 14.5px; margin-top: 12px; }
+      .role-detail .map b { color: var(--gold); }
+
+      /* ---------- Fact grid / cards ---------- */
+      .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; margin-top: 18px; }
+      .card {
+        background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+        padding: 18px 20px; box-shadow: var(--shadow);
+      }
+      .card h3 { margin: 0 0 4px; font-size: 18.5px; }
+      .card .tag { display: inline-block; font-size: 12px; font-weight: 700; border-radius: 999px; padding: 1px 10px; margin-bottom: 8px; }
+      .tag-rec { background: var(--jade-soft); color: var(--jade); }
+      .tag-mid { background: var(--gold-soft); color: var(--gold); }
+      .tag-heavy { background: var(--seal-soft); color: var(--seal); }
+      .card p { margin: 6px 0; font-size: 14.5px; color: var(--ink-2); }
+      .card p b, .card p strong { color: var(--ink); }
+      .card .links { margin-top: 10px; font-size: 13.5px; display: flex; flex-wrap: wrap; gap: 4px 14px; }
+      .card .stars { font-size: 13px; color: var(--ink-3); }
+
+      .kv { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; margin-top: 18px; }
+      .kv > div { background: var(--card); padding: 14px 18px; }
+      .kv dt { font-size: 12.5px; color: var(--ink-3); margin: 0 0 3px; }
+      .kv dd { margin: 0; font-weight: 600; font-size: 15.5px; }
+      .kv dd small { display: block; font-weight: 400; color: var(--ink-2); font-size: 13px; margin-top: 2px; }
+
+      .callout {
+        border: 1px solid var(--warn-line); background: var(--warn-bg); border-radius: 10px;
+        padding: 16px 20px; margin-top: 18px; font-size: 15px;
+      }
+      .callout b { color: var(--gold); }
+      .callout p { margin: 0 0 8px; } .callout p:last-child { margin: 0; }
+
+      .plain-list { margin: 14px 0 0; padding-left: 1.2em; }
+      .plain-list li { margin-bottom: 8px; }
+      .plain-list li::marker { color: var(--seal); }
+
+      /* ---------- Tables (stack on mobile) ---------- */
+      .tbl { width: 100%; border-collapse: collapse; margin-top: 18px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; font-size: 14.5px; }
+      .tbl th, .tbl td { padding: 11px 14px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+      .tbl thead th { background: var(--paper-2); font-family: "Noto Serif SC", serif; font-size: 14px; white-space: nowrap; }
+      .tbl tbody tr:last-child td { border-bottom: none; }
+      .tbl td:first-child { font-weight: 600; white-space: nowrap; }
+      @media (max-width: 700px) {
+        .tbl, .tbl thead, .tbl tbody, .tbl tr, .tbl td { display: block; }
+        .tbl thead { display: none; }
+        .tbl tr { padding: 10px 4px; border-bottom: 1px solid var(--line); }
+        .tbl tr:last-child { border-bottom: none; }
+        .tbl td { border-bottom: none; padding: 3px 14px; white-space: normal !important; }
+        .tbl td::before { content: attr(data-h); display: block; font-size: 11.5px; color: var(--ink-3); font-weight: 400; }
+        .tbl td:first-child::before { display: none; }
+        .tbl td:first-child { font-size: 16px; padding-top: 6px; }
+      }
+      .rate-hi { color: var(--seal); font-weight: 700; }
+      .rate-good { color: var(--jade); font-weight: 700; }
+
+      /* ---------- Picker ---------- */
+      .picker { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 22px 24px; box-shadow: var(--shadow); margin-top: 18px; }
+      .picker .q { font-family: "Noto Serif SC", serif; font-size: 18px; font-weight: 700; margin: 0 0 14px; }
+      .picker .opts { display: flex; flex-wrap: wrap; gap: 10px; }
+      .picker .opt {
+        font: inherit; font-size: 15px; cursor: pointer; border-radius: 8px; padding: 10px 16px;
+        border: 1px solid var(--line); background: var(--paper); color: var(--ink); text-align: left;
+      }
+      .picker .opt[aria-pressed="true"] { border-color: var(--jade); background: var(--jade-soft); }
+      .picker .answer { margin-top: 18px; border-top: 1px dashed var(--line); padding-top: 16px; display: none; }
+      .picker .answer.show { display: block; }
+      .picker .answer h3 { margin: 0 0 6px; font-size: 20px; color: var(--jade); }
+      .picker .answer p { margin: 0 0 8px; color: var(--ink-2); }
+      .picker .answer p b { color: var(--ink); }
+
+      .checklist { counter-reset: ck; margin-top: 18px; display: grid; gap: 10px; }
+      .checklist div {
+        background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 13px 18px 13px 52px; position: relative; font-size: 15px;
+      }
+      .checklist div::before {
+        counter-increment: ck; content: counter(ck);
+        position: absolute; left: 16px; top: 12px; width: 24px; height: 24px; border-radius: 50%;
+        background: var(--seal); color: #fdf6ec; font-size: 13px; font-weight: 700;
+        display: flex; align-items: center; justify-content: center; font-family: "JetBrains Mono", monospace;
+      }
+
+      .sources { font-size: 13.5px; color: var(--ink-2); }
+      .sources li { margin-bottom: 6px; }
+      footer { margin-top: 56px; border-top: 1px solid var(--line); padding-top: 18px; font-size: 13px; color: var(--ink-3); }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+
+      <!-- ================= HERO ================= -->
+      <header class="hero">
+        <div class="hero-top">
+          <div>
+            <h1>多 Agent 协作方案</h1>
+            <p class="sub">GitHub 上的「三省六部」到底是什么，和 LangGraph、AutoGen、CrewAI 这些主流框架比，谁更适合一个人写 Python 小工具。</p>
+          </div>
+          <div class="seal-stamp" aria-hidden="true">三省<br />六部</div>
+        </div>
+        <div class="meta-line">
+          <span>调研核查时间：2026-10-29</span>
+          <span>Star 数为当日快照，仅作量级参考</span>
+          <span>Edict 仓库页经实时打开核对，其余框架来自官方仓库与可信综述的索引抓取</span>
+        </div>
+        <div class="verdict">
+          <p><strong>一句话结论：</strong>「三省六部」在多 Agent 语境下最明确的对应项目是 <b>Edict（<code>cft0808/edict</code>）</b>——它不是一个能 <code>import</code> 进自己程序的 Python 库，而是一套基于 OpenClaw 的多 Agent 编排系统加实时看板：把唐朝「中书决策、门下审核封驳、尚书执行、六部分工」硬编码成 Agent 分工、单向权限矩阵和状态机，专治自由群聊式多 Agent 的跑偏、不可审计、不可干预。</p>
+          <p>它的最大卖点也是最大代价：<strong>强制审核 + 全程可观测可干预</strong>，换来的是 12 个 Agent 轮番调用大模型的 token 与延迟成本，和对 OpenClaw 部署的依赖。对独立 Python 开发者做小工具，最实用的起点是 <b>LangGraph</b>（要可控、可调试的工作流）和 <b>smolagents</b>（要最轻、最透明的代码执行），第二梯队是 <b>CrewAI</b>（快速拼一个角色小队）。</p>
+        </div>
+      </header>
+
+      <nav class="toc" aria-label="目录">
+        <a href="#edict">三省六部 · Edict</a>
+        <a href="#roles">十二个 Agent</a>
+        <a href="#compare">框架对比</a>
+        <a href="#patterns">五种协作模式</a>
+        <a href="#pick">选型建议</a>
+        <a href="#checklist">落地清单</a>
+        <a href="#sources">来源</a>
+      </nav>
+
+      <!-- ================= 1. EDICT ================= -->
+      <section id="edict">
+        <div class="sec-head"><span class="no">壹</span><h2>三省六部：Edict 是什么</h2></div>
+        <p class="sec-lede">历史原型是隋确立、唐完善的中央制度：中书省草拟政令、门下省审查诏令并有权驳回、尚书省执行政令并统领六部（吏、户、礼、兵、刑、工），三省分工制衡。Edict 搬进 Agent 编排的核心思想只有一条：<b>不是让几个 Agent 自由聊天，而是让流程本身不允许跳过审核。</b></p>
+
+        <div class="flow" role="img" aria-label="Edict 任务流程：你下旨，经太子分拣、中书省规划、门下省审议、尚书省派发、六部执行，最后回奏">
+          <div class="step"><b>你</b><span>在飞书 / Telegram / Signal 里「下旨」</span></div>
+          <div class="arrow">→</div>
+          <div class="step"><b>太子</b><span>分拣：闲聊直接回，真旨意才建任务</span></div>
+          <div class="arrow">→</div>
+          <div class="step"><b>中书省</b><span>规划：拆解子任务、设计方案</span></div>
+          <div class="arrow">→</div>
+          <div class="step hot"><b>门下省</b><span>审议：准奏，或封驳打回重做</span></div>
+          <div class="arrow">→</div>
+          <div class="step"><b>尚书省</b><span>派发：协调六部、汇总结果</span></div>
+          <div class="arrow">→</div>
+          <div class="step"><b>六部</b><span>并行执行各自的活</span></div>
+          <div class="arrow">→</div>
+          <div class="step"><b>回奏</b><span>结果归档为「奏折」</span></div>
+        </div>
+        <p class="flow-note">任务状态机：分拣 → 规划 → 审议 → 已派发 → 执行中 → 待审查 → 已完成；被封驳就回到规划重做。<code>scripts/kanban_update.py</code> 内置合法跳转校验，非法跳转（如 Doing→Taizi）会被拒绝并记日志——流程不允许「跳步」。</p>
+
+        <dl class="kv">
+          <div><dt>GitHub 仓库</dt><dd><a href="https://github.com/cft0808/edict">cft0808/edict</a><small>MIT 许可证，2026-02-23 创建</small></dd></div>
+          <div><dt>Star / Fork（2026-10-29 实测仓库页）</dt><dd>约 17.0k Star / 1.8k Fork<small>同日索引抓取为 17,025 Star / 1,765 Fork，基本一致</small></dd></div>
+          <div><dt>提交与活跃度</dt><dd>149 commits · Issues 10 · PRs 5<small>⚠️ 最新提交停在 2026-05-06，近 5 个月主干无新提交，0 个 Release</small></dd></div>
+          <div><dt>技术栈</dt><dd>Python 3.10+ 为主<small>看板前端 React 18 + TypeScript + Vite + Zustand；看板后端用 Python 标准库 http.server；较新后端用 SQLAlchemy + Redis Streams；需 macOS / Linux</small></dd></div>
+          <div><dt>上手方式</dt><dd><code>git clone</code> 后跑 <code>./install.sh</code><small>需先安装 OpenClaw 并配 API Key；只看演示可用 <code>docker run -p 7891:7891 cft0808/sansheng-demo</code></small></dd></div>
+          <div><dt>内置能力</dt><dd>军机处看板 · 朝堂议政 · 9 个圣旨模板<small>看板含旨意看板、省部调度、奏折归档、模型配置、会话监控等 10 个面板；每个 Agent 可独立切换模型，有 Token 统计与任务叫停 / 取消 / 恢复</small></dd></div>
+        </dl>
+
+        <h3 style="margin-top:28px;">它和「群聊式框架」最根本的四点区别</h3>
+        <ul class="plain-list">
+          <li><b>不是自由群聊，是单向权限矩阵。</b>太子只能发给中书；中书可回太子、发门下和尚书；门下可回中书、发尚书；尚书可回中书 / 门下、发全部六部与吏部；六部只能回尚书。下级不能越级喊话，上级不能绕过审核直达执行层。</li>
+          <li><b>审批是强制关卡，不是可选插件。</b>每个旨意都必须过门下省：规划不完备、拆解不合理就封驳打回，强制返工直到达标。README 自述对比称 CrewAI「无」专职审核、AutoGen 只有 Human-in-loop——注意这是项目方的宣传口径，不是对竞品的客观评测。</li>
+          <li><b>通信分两层。</b>Agent 层走 OpenClaw 原语（<code>sessions_spawn</code> / <code>sessions_send</code> / 公共频道消息），每个 Agent 有独立 Workspace、Skills 和模型，角色规则写在 <code>agents/&lt;id&gt;/SOUL.md</code> 里，改 Agent 就是改这个文件；后端服务层走 Redis Streams 事件总线 + 事务性 Outbox 中继（至少一次投递），支持并行调度、指数退避重试、资源锁与 DAG 依赖解析，所有状态变更写审计日志。</li>
+          <li><b>人可以随时干预，但「人审批」还不是标配。</b>看板支持叫停 / 取消 / 恢复任务、Agent 健康监控与 Token 排行榜；但 Roadmap Phase 2 还在做的「御批模式」（人工一键准奏 / 封驳）说明：目前审批主力是门下省这个 Agent，人工审批是计划中的功能，别误以为开箱即是人工审批流。</li>
+        </ul>
+
+        <div class="callout">
+          <p><b>两个容易混淆的点：</b></p>
+          <p>① 仓库 About 栏写的是「9 specialized agents」，README 正文写的是「12 个 AI Agent（11 个业务角色 + 1 个兼容角色）」——本页以 README 正文的 12 个为准。</p>
+          <p>② 另一个项目 <a href="https://github.com/wanikua/danghuangshang">wanikua/danghuangshang</a> 也是 OpenClaw「AI 朝廷」配置包，但默认是<b>明朝内阁制</b>（司礼监—内阁—六部—都察院），唐三省只是它的可选配置之一。2026 年 3 月的英文报道里，「三省六部」指的都是 Edict，不是它。</p>
+        </div>
+
+        <h3 style="margin-top:28px;">适合与不适合</h3>
+        <ul class="plain-list">
+          <li><b>适合：</b>需要「计划先被独立审核、执行全程可看可停可审计」的个人 / 小团队助手场景——周报与数据报告、竞品分析、代码审查（兵部写、刑部审）、API 设计与文档、多步骤调研汇总；尤其适合已经在用 OpenClaw、想给助手套一层制度外壳的人。</li>
+          <li><b>不适合：</b>嵌进自己 Python 工具的可编程工作流（它没有库 API）；对延迟和 token 成本敏感的批量小任务（12 个 Agent 全流程开销明显）；需要严格 SLA 和长期维护保障的生产系统（近半年无提交、单人维护色彩较重）。</li>
+        </ul>
+        <p style="font-size:14.5px;color:var(--ink-2);">外部评价也印证了这笔交易：2026-03-11 的英文长文称其为「12 Agent + 铁权限矩阵 + 单向信息流」，并点出核心代价——每一步起草、审核、否决、重做都要烧 token，是「用速度和便宜换幻觉更少的可靠性」（<a href="https://jingyu1623.substack.com/p/the-chinese-are-enthroning-themselves">Substack 长文</a>）；36氪英文版 2026-03-10 报道时其 Star 已超 6,500（<a href="https://eu.36kr.com/en/p/3715732052489609">36Kr</a>）。两者都不是性能基准测试，只能说明「爆红快、理念鲜明」。</p>
+      </section>
+
+      <!-- ================= 2. ROLES ================= -->
+      <section id="roles">
+        <div class="sec-head"><span class="no">贰</span><h2>十二个 Agent 各干什么</h2></div>
+        <p class="sec-lede">点任意一个角色看它的职责和对应的历史职能。README 的口径是「12 个 Agent = 11 个业务角色 + 1 个兼容角色」，其角色清单实际具名的是下面这 11 个：太子、三省、户 / 礼 / 兵 / 刑 / 工五部、吏部、早朝官——吏部本属传统六部之一，README 又把它单列进「七部」表述，计数口径本身略有含混，这里如实标注、不替它凑数。</p>
+        <div class="roles">
+          <div class="role-list" id="roleList" role="group" aria-label="Agent 角色列表"></div>
+          <div class="role-detail" id="roleDetail" aria-live="polite"></div>
+        </div>
+      </section>
+
+      <!-- ================= 3. COMPARE ================= -->
+      <section id="compare">
+        <div class="sec-head"><span class="no">叁</span><h2>和其他成熟框架对比</h2></div>
+        <p class="sec-lede">Star 数均为 2026 年 9—10 月前后的第三方快照，不同来源、不同日期会有数千差异，只用来看量级，别当实时精确值。CAMEL 与 AgentScope 未找到同口径的可靠 Star 数字，故不写精确值。</p>
+        <div class="grid" id="fwGrid"></div>
+
+        <div class="callout">
+          <p><b>一个容易踩的坑：Star 数 ≠ 活跃度。</b>Edict 有 17k Star，但最新提交在 5 个月前；MetaGPT 的 Star 在最高一档（65k—71k 量级，两个快照口径不同），但最新稳定版停留在 2025-03-09 的 v0.8.2，后续只是修修补补，2026 年的活跃度统计把它的最后提交记为 2026-01，团队重心已转商业产品 MGX，且当前版本只支持 Python ≥3.9 且 &lt;3.12。</p>
+          <p>选型时除了 Star，还要同时看四件事：<b>最近提交时间、有没有 Release、Issue 是否有人回、是否支持你现在的 Python 版本</b>。这四项里，Edict 和 MetaGPT 都不算顶格。</p>
+        </div>
+      </section>
+
+      <!-- ================= 4. PATTERNS ================= -->
+      <section id="patterns">
+        <div class="sec-head"><span class="no">肆</span><h2>五种协作模式与权衡</h2></div>
+        <p class="sec-lede">多数框架是混用几种模式，不是单选。Edict 本身就是「层级审批 + 流水线 + 并行执行」的复合体：先走中书→门下的审批流水线，再由尚书把任务扇出给六部并行跑——这正是它比纯主管模式多两层开销的原因。</p>
+
+        <table class="tbl">
+          <thead><tr><th>模式</th><th>怎么协作</th><th>代表实现</th><th>适用场景</th></tr></thead>
+          <tbody>
+            <tr><td>中央 Supervisor（主管—工人）</td><td data-h="怎么协作">一个主管 Agent 拆任务、派给专家、汇总结果；工人只见自己的简报、回结果</td><td data-h="代表实现">LangGraph supervisor、CrewAI hierarchical、Google ADK 根 Agent 委派、Edict 的尚书省（但 Edict 在主管前还加了规划与审核两层）</td><td data-h="适用场景">任务结构事先说不清、需要动态选专家，且需要一个明确汇总点</td></tr>
+            <tr><td>流水线 Pipeline（顺序）</td><td data-h="怎么协作">Agent 按固定顺序接力，前一个的输出就是下一个的输入</td><td data-h="代表实现">MetaGPT 的 SOP、CrewAI sequential、ADK SequentialAgent、LangGraph 线性图</td><td data-h="适用场景">流程固定、可复现：调研→写作→审校，需求→设计→代码→测试</td></tr>
+            <tr><td>层级审批（Hierarchical Approval）</td><td data-h="怎么协作">在流水线 / 主管之上再加一道独立审核关：规划者与审核者分离，审核者有权否决打回</td><td data-h="代表实现">Edict 的中书→门下→尚书是最极致的例子；LangGraph 的人工 interrupt、MetaGPT 的 QA 环节是弱化版</td><td data-h="适用场景">质量 / 合规 / 安全的代价高于速度的场景；但要接受返工循环拖长流程</td></tr>
+            <tr><td>对等辩论 / 群聊（Peer Debate）</td><td data-h="怎么协作">多个 Agent 平等对话、互相批评，或正反方辩论后由裁判 / 投票定稿</td><td data-h="代表实现">AutoGen GroupChat、CAMEL 角色对子、Edict 的「朝堂议政」、多 Agent 辩论研究范式</td><td data-h="适用场景">答案不唯一、需要多视角纠错的高风险推理；研究与评审类任务</td></tr>
+            <tr><td>对等交接 / 蜂群（Handoff / Swarm）</td><td data-h="怎么协作">没有中央主管，当前 Agent 自己决定下一个交给谁，点对点移交</td><td data-h="代表实现">LangGraph Swarm、OpenAI Agents SDK handoffs、ADK 的 sub_agents 动态路由（弱化版）</td><td data-h="适用场景">路由逻辑简单、Agent 间职责边界清晰的转交场景；比群聊省上下文</td></tr>
+          </tbody>
+        </table>
+
+        <table class="tbl">
+          <thead><tr><th>模式</th><th>复杂度</th><th>成本（token / 延迟）</th><th>可靠性</th><th>可调试性</th><th>主要风险</th></tr></thead>
+          <tbody>
+            <tr><td>单 Agent（对照组）</td><td data-h="复杂度">最低</td><td data-h="成本">最低</td><td data-h="可靠性">取决于单模型与提示词，无交叉校验</td><td data-h="可调试性"><span class="rate-good">最好</span>：一条链路</td><td data-h="主要风险">上下文爆炸、幻觉无人纠</td></tr>
+            <tr><td>流水线</td><td data-h="复杂度">低—中：顺序写死</td><td data-h="成本">低—中：每步一次调用</td><td data-h="可靠性">中：每步可加校验，但一步错会向后传导</td><td data-h="可调试性"><span class="rate-good">好</span>：步骤与产物一一对应</td><td data-h="主要风险">僵化；中途需求变化要改流程</td></tr>
+            <tr><td>中央 Supervisor</td><td data-h="复杂度">中：主管提示词是关键</td><td data-h="成本">中：主管每次都要读汇总再决策</td><td data-h="可靠性">中—高：能重试 / 换人，但主管是单点</td><td data-h="可调试性">中：主管决策链可追踪，工人内部仍是黑盒</td><td data-h="主要风险">主管瓶颈、主管错则全错、上下文汇总失真</td></tr>
+            <tr><td>层级审批（Edict 式）</td><td data-h="复杂度">高：角色、权限、状态机三套规则</td><td data-h="成本"><span class="rate-hi">最高</span>：规划+审核+执行+可能的返工循环，每轮都烧 token</td><td data-h="可靠性">高（对计划质量而言）：坏计划很难流到执行层</td><td data-h="可调试性"><span class="rate-good">好</span>（流程层面）：看板 + 审计日志能还原谁批了谁；但单个 Agent 的推理仍难复现</td><td data-h="主要风险">审核过严→无限返工；审核 Agent 本身幻觉→误杀好方案；制度成本压倒小任务收益</td></tr>
+            <tr><td>对等辩论 / 群聊</td><td data-h="复杂度">中—高：发言顺序、终止条件难调</td><td data-h="成本">高：多 Agent 各说各话，历史越滚越大</td><td data-h="可靠性">中—高（对事实性任务）：多视角能纠错，但也可能互相附和</td><td data-h="可调试性"><span class="rate-hi">差</span>：要翻整段对话才能定位谁带偏了</td><td data-h="主要风险">无限寒暄 / 互相附和 / 死循环；没有终止规则会一直聊下去</td></tr>
+            <tr><td>对等交接 / 蜂群</td><td data-h="复杂度">中：交接条件要写清楚</td><td data-h="成本">中：省去主管中转，但每次交接仍要重述上下文</td><td data-h="可靠性">中：边界清晰时很顺，模糊时容易踢皮球</td><td data-h="可调试性">中：交接链可追踪，但无全局视图</td><td data-h="主要风险">循环交接、责任不清</td></tr>
+          </tbody>
+        </table>
+
+        <ul class="plain-list">
+          <li><b>结构化换可靠性，涌现式换灵活性。</b>图 / SOP / 审批这类结构化编排换来可靠性与可审计性，代价是前期设计成本；群聊 / 角色扮演这类涌现式编排反过来。（<a href="https://www.mdpi.com/1999-5903/18/6/326">MDPI 综述</a>）</li>
+          <li><b>状态模型决定你能怎么排错。</b>LangGraph / 微软新框架把状态当一等公民（类型化、可 checkpoint、可回滚）；CrewAI / AutoGen 的状态更多是从对话历史中「长出来」的，短任务简单，长流程容易失控。</li>
+          <li><b>先用最轻的模式解决真实失败。</b>只有当你能说出「单 Agent 具体在哪个环节失败、需要哪个新角色来补」时才加 Agent；否则每加一个 Agent，都是在加 token、延迟与调试面。Edict 的反面教材意义正在这里：它默认给你 12 个 Agent，哪怕你的任务只需要 2 个。</li>
+        </ul>
+      </section>
+
+      <!-- ================= 5. PICK ================= -->
+      <section id="pick">
+        <div class="sec-head"><span class="no">伍</span><h2>给独立 Python 开发者的选型</h2></div>
+        <p class="sec-lede">场景限定：一个人、用 Python、做小型自动化工具——代码生成、测试、数据处理、网页自动化。不是做平台、不是带团队、不是发论文。先用下面的小测试对一下号，再看展开。</p>
+
+        <div class="picker">
+          <p class="q">你的工具，逻辑主要是哪一种？</p>
+          <div class="opts" id="pickOpts">
+            <button type="button" class="opt" data-pick="smol" aria-pressed="false">我写代码为主，模型偶尔帮个忙</button>
+            <button type="button" class="opt" data-pick="lang" aria-pressed="false">模型按可循环的流程干活，我要能排错、能续跑</button>
+            <button type="button" class="opt" data-pick="crew" aria-pressed="false">几个角色按固定顺序接力写东西</button>
+            <button type="button" class="opt" data-pick="none" aria-pressed="false">下个命令，让一群 Agent 自己折腾</button>
+          </div>
+          <div class="answer" id="pickAnswer" aria-live="polite"></div>
+        </div>
+
+        <div class="grid">
+          <div class="card">
+            <span class="tag tag-rec">第 1 位 · 默认答案</span>
+            <h3>LangGraph</h3>
+            <p>需要「可控工作流」时的首选，也是目前 Python 生态里<b>最不怕变复杂</b>的起点。开始可以只是一个 ReAct Agent；后来需要「生成→测试→修 bug→再测」的循环、人工确认危险操作、断点续跑时，不用换框架，直接在图上加节点和边、加 checkpoint 就行。状态、重试、人工介入（interrupt）都是现成的，出了问题能定位到某一步、某一次状态变更，而不是只剩一段聊天记录。</p>
+            <p><b>对应你的任务：</b>代码生成（生成→测试→修复循环）、数据处理（抽取→清洗→校验→落盘，每步产物可查）、网页自动化（导航→抽取→校验→重试，失败可从 checkpoint 恢复）。</p>
+            <p><b>代价：</b>样板代码比 CrewAI 多，要自己设计状态结构；别一上来就写 supervisor 多 Agent，先单 Agent + 工具 + 循环，真的需要分工时再挂子图。</p>
+            <div class="links"><a href="https://github.com/langchain-ai/langgraph">GitHub 仓库</a><a href="https://reference.langchain.com/python/langgraph/overview">官方文档</a></div>
+          </div>
+          <div class="card">
+            <span class="tag tag-rec">第 2 位 · 最轻最透明</span>
+            <h3>smolagents（Hugging Face）</h3>
+            <p>核心约 1,000 行、Apache-2.0。它的 <code>CodeAgent</code> 让模型<b>直接写 Python 代码调用你的工具函数</b>——工具就是普通 Python 函数，Agent 的每一步都是可读的代码，调试时不用猜框架在背后做了什么。<code>pip install smolagents</code> 几行就能跑，模型可换 LiteLLM / 本地 Ollama / HF。</p>
+            <p><b>对应你的任务：</b>批量数据清洗与报表、调用 API / 爬取并结构化、把重复手工操作写成「Agent + 一组工具函数」的小脚本。</p>
+            <p><b>注意：</b>代码执行必须加沙箱（E2B / Modal / Docker，或至少只在受信本地环境跑）；它本身不是多 Agent 框架，复杂协作要自己拼，别指望它替你做编排。</p>
+            <div class="links"><a href="https://github.com/huggingface/smolagents">GitHub 仓库</a><a href="https://huggingface.co/docs/hub/agents-libraries">官方文档</a></div>
+          </div>
+          <div class="card">
+            <span class="tag tag-mid">第 3 位 · 可选捷径</span>
+            <h3>CrewAI</h3>
+            <p>最接近「用人话组建团队」：给每个 Agent 写 role / goal / backstory，给每个 Task 写描述与期望输出，<code>Crew(...).kickoff()</code> 就跑起来，20 行左右能跑通一个小队。<code>sequential</code> 是流水线，<code>hierarchical</code> 会自动生成一个经理 Agent 做委派与校验；另有 Flows 做事件编排。现成工具也较多（搜索、读文件、读 PDF 等）。</p>
+            <p><b>什么时候选它：</b>流程基本固定、分支少，你更看重「今天就能跑起来」。</p>
+            <p><b>什么时候别选它：</b>流程里有循环、条件分支、需要精确状态回放时——经理 / 委派逻辑是黑盒，那时 LangGraph 的图好维护得多。</p>
+            <div class="links"><a href="https://github.com/crewAIInc/crewAI">GitHub 仓库</a></div>
+          </div>
+        </div>
+
+        <h3 style="margin-top:30px;">对这个场景过重、或偏研究演示的</h3>
+        <table class="tbl">
+          <thead><tr><th>项目</th><th>为什么过重 / 偏演示</th><th>什么情况下才值得看</th></tr></thead>
+          <tbody>
+            <tr><td>Edict（三省六部）</td><td data-h="为什么过重">不是库，是 OpenClaw 系统 + 看板 + 12 Agent 全套；要先部署 OpenClaw、配齐各 Agent 的模型与 Skills；默认流程的 token / 延迟开销对小任务不划算；近 5 个月主干无提交</td><td data-h="值得看的情况">你已在用 OpenClaw 当个人助手，且确实需要「计划必审、执行可看可停」；或借鉴它的权限矩阵 / 状态机思想，自己在 LangGraph 里实现一个轻量版「门下省」</td></tr>
+            <tr><td>MetaGPT</td><td data-h="为什么过重">流程写死为软件公司 SOP，改流程成本高；版本与 Python 兼容性有缺口（&lt;3.12）、更新放缓、重心转商业 MGX；为小工具生成整套 PRD / 设计 / 代码属于过度设计</td><td data-h="值得看的情况">研究 SOP 式多 Agent，或确实要「一句话出项目骨架」做演示 / 教学</td></tr>
+            <tr><td>CAMEL</td><td data-h="为什么过重">学术角色扮演框架，工程化（工具、状态、部署）支持弱；对话式协作容易跑偏且难精确控制</td><td data-h="值得看的情况">研究角色扮演、社会模拟、对话数据生成；教学演示</td></tr>
+            <tr><td>AgentScope</td><td data-h="为什么过重">平台型：分布式、容错、多模态、可视化 Studio 一整套，学习与运维成本远超小工具所需</td><td data-h="值得看的情况">本来就要做分布式长会话、多 Agent 游戏 / 模拟</td></tr>
+            <tr><td>Microsoft Agent Framework / Google ADK</td><td data-h="为什么过重">本身是好框架，但属于「生态绑定型」选择：前者适合微软 / Azure 栈，后者适合 GCP / Gemini 栈；不在对应云上收益不大</td><td data-h="值得看的情况">你已深度绑定 Azure 或 GCP / Gemini，且需要官方长期支持</td></tr>
+            <tr><td>AutoGen（旧 GroupChat）</td><td data-h="为什么过重">对话历史驱动，调试靠翻聊天记录；微软主推方向已转向新框架，新项目从旧 API 起手容易走弯路</td><td data-h="值得看的情况">维护老代码、复现群聊式研究</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- ================= 6. CHECKLIST ================= -->
+      <section id="checklist">
+        <div class="sec-head"><span class="no">陆</span><h2>落地清单：避开多 Agent 的常见坑</h2></div>
+        <div class="checklist">
+          <div>先写<b>确定性代码</b>（解析、校验、测试、落盘）包住不确定性：让 Agent 只做「生成 / 判断」，让 Python 代码做「执行 / 校验 / 重试」。</div>
+          <div>每个 Agent 只给<b>一个可验收的交付物</b>——例如「输出一段能通过 pytest 的代码」，而不是「提高代码质量」。</div>
+          <div>给循环设<b>硬上限</b>（最多修 N 次、最多辩论 M 轮），防止返工 / 辩论循环烧光 token。Edict 的门下省封驳循环如果没有上限，在小任务上就是这个坑的放大版。</div>
+          <div>危险操作（删文件、发请求、改线上数据）前加<b>人工确认或白名单</b>；框架的 interrupt / 审批是用来兜底的，不是装饰。</div>
+          <div>记 <b>token 与延迟账本</b>：多 Agent 的第一性价比指标不是「Agent 数量」，而是「每完成一个任务花了多少 token、多少秒、失败率多少」。</div>
+        </div>
+      </section>
+
+      <!-- ================= 7. CAVEATS + SOURCES ================= -->
+      <section id="sources">
+        <div class="sec-head"><span class="no">柒</span><h2>口径说明与来源</h2></div>
+        <div class="callout">
+          <p><b>未能核实 / 需打折看的：</b></p>
+          <p>· Edict 的实时数据（Star 约 17k、最新提交 2026-05-06、149 commits）是 2026-10-29 在研究浏览器里打开仓库页核对的；但未登录状态下没能核对贡献者人数、CI 通过率，Roadmap Phase 2 只写「进行中」，不逐项断言。</p>
+          <p>· 其他框架的 Star 数来自第三方快照（2026-09 / 10 前后），与 2026-10-29 当天 GitHub 数字不保证逐一相符，只作量级排序用：MetaGPT &gt; AutoGen ≈ CrewAI &gt; LangGraph &gt; smolagents / ADK &gt; 微软新框架 &gt; Edict。</p>
+          <p>· Edict 的性能与质量说法（README 自述「比 CrewAI 多审核、比 AutoGen 多看板」、外部评论「幻觉更少」）都是主张，不是受控基准测试结果。</p>
+          <p>· Edict 在 Windows 下的完整安装体验、各框架在你本地 Python 版本下的安装细节，未实测，需按各自官方文档验证。</p>
+        </div>
+        <ul class="sources" style="margin-top:18px; padding-left:1.2em;">
+          <li>Edict 仓库（2026-10-29 实时核对）：<a href="https://github.com/cft0808/edict">github.com/cft0808/edict</a>；其 <a href="https://deepwiki.com/cft0808/edict/6.5-six-ministries-execution-agents">DeepWiki 解析页</a></li>
+          <li>Edict 外部解读（2026-03-11）：<a href="https://jingyu1623.substack.com/p/the-chinese-are-enthroning-themselves">jingyu1623.substack.com</a>；早期报道（2026-03-10）：<a href="https://eu.36kr.com/en/p/3715732052489609">36Kr 英文版</a></li>
+          <li>三省六部历史原型：<a href="http://www.china.org.cn/english/china_key_words/2024-08/29/content_117393784.html">china.org.cn 关键词</a>；<a href="https://en.wikipedia.org/wiki/Three_Departments_and_Six_Ministries">Wikipedia: Three Departments and Six Ministries</a></li>
+          <li>易混项目 danghuangshang：<a href="https://github.com/wanikua/danghuangshang">仓库</a>；<a href="https://deepwiki.com/wanikua/danghuangshang/1.1-core-concepts-and-terminology">DeepWiki 核心概念页</a></li>
+          <li>LangGraph：<a href="https://github.com/langchain-ai/langgraph">仓库</a>；<a href="https://reference.langchain.com/python/langgraph/overview">文档</a></li>
+          <li>AutoGen：<a href="https://github.com/microsoft/autogen">仓库</a>；Microsoft Agent Framework：<a href="https://github.com/microsoft/agent-framework">仓库</a>；<a href="https://www.digitalapplied.com/blog/microsoft-agent-framework-1-0-dotnet-python-guide">MAF 1.0 介绍</a></li>
+          <li>CrewAI：<a href="https://github.com/crewAIInc/crewAI">仓库</a></li>
+          <li>MetaGPT：<a href="https://github.com/FoundationAgents/MetaGPT">仓库</a>（旧文章常写 geekan/MetaGPT，是同一项目换组织）；<a href="https://github.com/jaigouk/altoiddd/blob/HEAD/docs/research/20260222_metagpt_pythagora_competitive_analysis.md">2026-02 状态分析</a>；<a href="https://dev.to/agentoolrank/stars-lie-669-open-source-ai-agent-repos-ranked-by-what-they-actually-do-1fdb">活跃度统计</a></li>
+          <li>CAMEL：<a href="https://github.com/camel-ai/camel">仓库</a></li>
+          <li>AgentScope：<a href="https://github.com/agentscope-ai/agentscope">仓库</a>；<a href="https://arxiv.org/pdf/2402.14034v2">论文（arXiv:2402.14034）</a></li>
+          <li>Google ADK：<a href="https://adk.dev/agents/workflow-agents/sequential-agents/">工作流 Agent 文档</a></li>
+          <li>smolagents：<a href="https://github.com/huggingface/smolagents">仓库</a>；<a href="https://huggingface.co/docs/hub/agents-libraries">文档</a></li>
+          <li>Star 快照汇总：<a href="https://octomind.run/blog/open-source-ai-agents">octomind.run</a>；协作模式综述：<a href="https://www.mdpi.com/1999-5903/18/6/326">MDPI</a>、<a href="https://atoms.dev/blog/multi-agent-collaboration">atoms.dev</a>、<a href="https://resources.rework.com/tools/ai-agents/best-multi-agent-frameworks-2026">rework.com</a></li>
+        </ul>
+      </section>
+
+      <footer>本页内容来自 2026-10-29 的公开网络调研快照；框架版本与 Star 数会随时间变化，动手选型前请再打开各官方仓库确认最新状态。</footer>
+    </div>
+
+    <script>
+      /* ---------- Role explorer ---------- */
+      var ROLES = [
+        { name: "太子", layer: "入口 · 分拣", id: "taizi",
+          duty: "消息分拣：闲聊直接回复，只有真正的「旨意」才建任务；同时提炼任务标题。",
+          map: "对应职能是「过滤噪声」——避免每一句闲聊都触发全套十二个 Agent 的流程，白白烧 token。" },
+        { name: "中书省", layer: "三省 · 决策", id: "zhongshu",
+          duty: "接旨、规划、拆解子任务、设计执行方案。它只出计划，不直接执行。",
+          map: "历史上的中书省负责草拟政令——在这里就是「写执行计划」。权限：可回太子，可发门下省与尚书省。" },
+        { name: "门下省", layer: "三省 · 审核", id: "menxia",
+          duty: "审议中书省的方案：准奏放行，或封驳打回中书重做，直到达标才放行。审查规划是否完备、子任务拆解是否合理。",
+          map: "历史上的门下省握有「封驳权」，可以驳回皇帝的诏令——这是整个系统最关键的制衡点，也是 Edict 区别于其他框架的杀手锏。权限：可回中书，可发尚书。" },
+        { name: "尚书省", layer: "三省 · 执行中枢", id: "shangshu",
+          duty: "派发任务、协调六部、汇总结果、回奏，并维护看板状态。",
+          map: "历史上尚书省是执行机关并统领六部——在这里是总调度。权限最宽：可回中书 / 门下，可发全部六部与吏部。" },
+        { name: "户部", layer: "六部 · 执行", id: "hubu",
+          duty: "数据处理、报表、成本分析。",
+          map: "历史上的户部管财政与户籍——映射到数据与成本，一点不违和。" },
+        { name: "礼部", layer: "六部 · 执行", id: "libu",
+          duty: "技术文档、API 文档、规范撰写。",
+          map: "历史上的礼部管礼仪与文书典章——映射到文档工作。" },
+        { name: "兵部", layer: "六部 · 执行", id: "bingbu",
+          duty: "功能开发、Bug 修复、代码审查——工程主力。",
+          map: "历史上的兵部管军事——在这里是最能「打仗」的写代码角色。六部权限相同：只能回尚书省，不能越级。" },
+        { name: "刑部", layer: "六部 · 执行", id: "xingbu",
+          duty: "安全扫描、合规检查、红线管控。",
+          map: "历史上的刑部管司法刑狱——映射到安全审计：兵部写、刑部审，是 Edict 内部的第二道校验。" },
+        { name: "工部", layer: "六部 · 执行", id: "gongbu",
+          duty: "Docker、CI/CD 流水线、基础设施。",
+          map: "历史上的工部管工程营造——映射到部署与基建，名正言顺。" },
+        { name: "吏部", layer: "六部之一 · 人事", id: "libu_hr",
+          duty: "Agent 注册、权限维护、培训——管的是 Agent 自身。在 Edict 的角色表里它单列于其他五部之外，但本属传统六部之一。",
+          map: "历史上的吏部管官员任免考核——映射到 Agent 的注册与权限管理。尚书省派发时可直发吏部，六部执行角色则只能回尚书省。" },
+        { name: "早朝官", layer: "兼容 · 情报", id: "zaochao",
+          duty: "每日早朝、新闻聚合、定时播报。",
+          map: "对应「邸报 / 早朝」式的情报汇总，是 12 个 Agent 里那个「兼容角色」，不走旨意主流程。" }
+      ];
+      var roleList = document.getElementById("roleList");
+      var roleDetail = document.getElementById("roleDetail");
+      function showRole(i) {
+        var r = ROLES[i];
+        var btns = roleList.querySelectorAll(".role-btn");
+        for (var j = 0; j < btns.length; j++) btns[j].setAttribute("aria-pressed", j === i ? "true" : "false");
+        roleDetail.innerHTML =
+          "<h3>" + r.name + "</h3>" +
+          '<div class="rid">' + r.layer + " · Agent ID：<code>" + r.id + "</code></div>" +
+          "<p>" + r.duty + "</p>" +
+          '<div class="map"><b>历史映射 · </b>' + r.map + "</div>";
+      }
+      ROLES.forEach(function (r, i) {
+        var b = document.createElement("button");
+        b.type = "button";
+        b.className = "role-btn";
+        b.setAttribute("aria-pressed", "false");
+        b.innerHTML = '<span class="rn">' + r.name + '</span><span class="rl">' + r.layer + "</span>";
+        b.addEventListener("click", function () { showRole(i); });
+        roleList.appendChild(b);
+      });
+      showRole(2); /* 默认展示门下省：整个系统最关键的角色 */
+
+      /* ---------- Framework cards ---------- */
+      var FRAMEWORKS = [
+        { name: "Edict（三省六部）", tag: "层级审批制", tagClass: "tag-heavy",
+          stars: "约 17.0k Star（2026-10-29 实测）；2026-02 创建，最新提交 2026-05",
+          mode: "<b>协作模式：</b>分拣→规划→审核封驳→派发→并行执行→回奏；单向权限矩阵 + 状态机。",
+          lang: "<b>语言：</b>Python（配置包 / 系统，非库）+ React 看板，依赖 OpenClaw。",
+          use: "<b>典型用途：</b>个人助手、多步骤调研 / 报告 / 代码审查，要求可审计、可干预。",
+          links: [["仓库", "https://github.com/cft0808/edict"]] },
+        { name: "LangGraph", tag: "图工作流", tagClass: "tag-rec",
+          stars: "约 42.6k Star（2026-09 快照）；LangChain 生态核心，非常成熟",
+          mode: "<b>协作模式：</b>图——节点 + 条件边；可做 supervisor、流水线、循环、handoff / swarm。状态是强类型共享对象，checkpoint 支持暂停、回放、断点续跑与人工介入。",
+          lang: "<b>语言：</b>Python（也有 JS 版）。",
+          use: "<b>典型用途：</b>可控、有状态、长流程的生产级 Agent 系统。",
+          links: [["仓库", "https://github.com/langchain-ai/langgraph"], ["文档", "https://reference.langchain.com/python/langgraph/overview"]] },
+        { name: "Microsoft AutoGen → Agent Framework", tag: "对话式 → 图工作流", tagClass: "tag-mid",
+          stars: "AutoGen 约 61.3k Star；新框架 MAF 约 13.9k Star，1.0 已于 2026-04 GA（均为快照）",
+          mode: "<b>协作模式：</b>旧 AutoGen 是对话式——ConversableAgent + GroupChat 轮流发言，由管理器选下一个发言人；微软已把 Semantic Kernel 与 AutoGen 合并为 Microsoft Agent Framework，改走图工作流（顺序 / 并发 / 交接 / 群聊）+ MCP / A2A 协议。AutoGen Studio 自 2025-10 起仅维护。",
+          lang: "<b>语言：</b>Python / .NET。",
+          use: "<b>典型用途：</b>研究、对话式协作、Azure / 微软栈。<b>新项目建议直接看新框架，别从旧 AutoGen API 起手。</b>",
+          links: [["AutoGen 仓库", "https://github.com/microsoft/autogen"], ["新框架仓库", "https://github.com/microsoft/agent-framework"]] },
+        { name: "CrewAI", tag: "角色制小队", tagClass: "tag-rec",
+          stars: "约 59.3k Star（2026-09 快照）；成熟、社区大",
+          mode: "<b>协作模式：</b>角色制——Agent（角色 / 目标 / 背景）+ Task + Crew；sequential 流水线，或 hierarchical 自动经理委派；另有 Flows 事件编排。",
+          lang: "<b>语言：</b>Python。",
+          use: "<b>典型用途：</b>快速拼「研究员→写手→审校」式小队；内容、调研、报告类流水线。",
+          links: [["仓库", "https://github.com/crewAIInc/crewAI"]] },
+        { name: "MetaGPT", tag: "SOP 流水线", tagClass: "tag-heavy",
+          stars: "Star 在 64k—71k 量级（不同快照口径）；但最新稳定版停在 2025-03 的 v0.8.2，活跃度放缓",
+          mode: "<b>协作模式：</b>模拟软件公司的 SOP 流水线：产品经理→架构→项目经理→工程师→QA，消息池订阅制。口号是「Code = SOP(Team)」，产物是整套工程文档而非一段对话。",
+          lang: "<b>语言：</b>Python（仅支持 ≥3.9 且 &lt;3.12）。",
+          use: "<b>典型用途：</b>一句话需求生成整套软件制品（PRD、设计、代码、测试）；教学与研究价值大于日常小工具。",
+          links: [["仓库", "https://github.com/FoundationAgents/MetaGPT"]] },
+        { name: "CAMEL", tag: "角色扮演对话", tagClass: "tag-heavy",
+          stars: "学术起源（NeurIPS 2023 论文）的开源社区项目；早期报道约 3.6k Star，量级远小于上面几家，当前精确 Star 数未核到同口径数据",
+          mode: "<b>协作模式：</b>角色扮演对话——AI User 提指令、AI Assistant 给方案，靠 inception prompting 与任务细化器一轮轮推进，直到任务完成标记出现；可扩展为多 Agent 社会模拟。",
+          lang: "<b>语言：</b>Python。",
+          use: "<b>典型用途：</b>角色扮演、对话数据生成、社会模拟与行为研究；教学演示。",
+          links: [["仓库", "https://github.com/camel-ai/camel"]] },
+        { name: "AgentScope（阿里）", tag: "消息传递 · 分布式", tagClass: "tag-mid",
+          stars: "阿里背景、论文驱动（arXiv:2402.14034）；当前精确 Star 数未核到同口径数据，不在此写死",
+          mode: "<b>协作模式：</b>消息传递 + 多模式：Pipeline / 消息中心、对话、辩论、并发、路由、handoff；actor 式分布式部署，本地与分布式同一套写法；强调容错（重试 / 自定义故障处理）与多模态，有可视化 Studio 与追踪。",
+          lang: "<b>语言：</b>Python。",
+          use: "<b>典型用途：</b>分布式多 Agent、游戏 / 模拟、RAG 与多模态对话；需要容错与可观测性的中大型系统。",
+          links: [["仓库", "https://github.com/agentscope-ai/agentscope"], ["论文", "https://arxiv.org/pdf/2402.14034v2"]] },
+        { name: "Google ADK（补充）", tag: "层级树 + 确定性工作流", tagClass: "tag-mid",
+          stars: "约 21.7k Star（2026-09 快照）；Google 官方，2025 年推出",
+          mode: "<b>协作模式：</b>层级树——父 Agent 委派 sub_agents；外加 SequentialAgent / ParallelAgent / LoopAgent 三种确定性工作流。",
+          lang: "<b>语言：</b>Python / TS / Go / Java。",
+          use: "<b>典型用途：</b>Gemini / GCP 栈，需要可审计的顺序 / 并行 / 循环流程。",
+          links: [["文档", "https://adk.dev/agents/workflow-agents/sequential-agents/"]] },
+        { name: "smolagents（补充）", tag: "单 Agent 代码执行", tagClass: "tag-rec",
+          stars: "约 29.6k Star（2026-09 快照）；Hugging Face 出品",
+          mode: "<b>协作模式：</b>严格说不是多 Agent 框架——单 Agent 的 CodeAgent 直接写 Python 代码调工具（另有 ToolCallingAgent）；多 Agent 要自己拼。列在这里是因为它是对照组里最实用的「轻」选项。",
+          lang: "<b>语言：</b>Python；核心约 1,000 行，Apache-2.0。",
+          use: "<b>典型用途：</b>最轻的自动化脚本、数据处理、网页自动化原型。",
+          links: [["仓库", "https://github.com/huggingface/smolagents"], ["文档", "https://huggingface.co/docs/hub/agents-libraries"]] }
+      ];
+      var fwGrid = document.getElementById("fwGrid");
+      FRAMEWORKS.forEach(function (f) {
+        var links = f.links.map(function (l) { return '<a href="' + l[1] + '">' + l[0] + "</a>"; }).join("");
+        var d = document.createElement("div");
+        d.className = "card";
+        d.innerHTML = '<span class="tag ' + f.tagClass + '">' + f.tag + "</span>" +
+          "<h3>" + f.name + "</h3>" +
+          '<p class="stars">' + f.stars + "</p>" +
+          "<p>" + f.mode + "</p><p>" + f.lang + "</p><p>" + f.use + "</p>" +
+          '<div class="links">' + links + "</div>";
+        fwGrid.appendChild(d);
+      });
+
+      /* ---------- Picker ---------- */
+      var ANSWERS = {
+        smol: { title: "选 smolagents", body: "<p>你的活主要是<b>确定性代码</b>，模型只在少数环节帮忙判断或生成——那就别上多 Agent。用 smolagents 的 CodeAgent 直接写 Python 调你的工具函数，每一步都是可读的代码，出错一眼能定位。</p><p>记住一条：<b>代码执行必须加沙箱</b>（E2B / Modal / Docker，或只在受信本地环境跑）。</p>" },
+        lang: { title: "选 LangGraph", body: "<p>你需要的是<b>流程本身可控</b>：有循环（生成→测试→修复）、有条件分支、失败了能从断点续跑、危险操作前能人工确认。这正是图工作流的主场——状态可查、步骤可回放。</p><p>上手顺序：先写单 Agent + 工具 + 循环，<b>真的需要分工时再加子图</b>，别一上来就搭 supervisor 多 Agent。</p>" },
+        crew: { title: "选 CrewAI", body: "<p>固定角色、固定顺序、接力产出文本——CrewAI 的 Agent / Task / Crew 写法是最省事的，几十行就能跑通一个「研究员→写手→审校」小队。</p><p>但先想清楚：如果流程里后来要加<b>循环和条件分支</b>，黑盒经理会开始碍事，那时应该直接用 LangGraph。</p>" },
+        none: { title: "先停一下：多半不需要多 Agent", body: "<p>「下个命令让一群 Agent 自己折腾」听起来很爽，但群聊式协作的代价是确定的：token 翻倍、延迟翻倍、出错后要翻整段聊天记录才知道谁带偏了。</p><p>先试<b>一个写好提示词的单 Agent + 测试循环</b>。只有当你能具体说出「它在哪个环节失败、需要哪个新角色来补」时，再加第二个 Agent——Edict 默认塞 12 个 Agent 的做法，对小任务就是反面教材。</p>" }
+      };
+      var pickAnswer = document.getElementById("pickAnswer");
+      var pickBtns = document.querySelectorAll("#pickOpts .opt");
+      pickBtns.forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          pickBtns.forEach(function (b) { b.setAttribute("aria-pressed", "false"); });
+          btn.setAttribute("aria-pressed", "true");
+          var a = ANSWERS[btn.getAttribute("data-pick")];
+          pickAnswer.innerHTML = "<h3>" + a.title + "</h3>" + a.body;
+          pickAnswer.classList.add("show");
+        });
+      });
+    </script>
+  </body>
+</html>
